@@ -2,7 +2,7 @@
     "$schema": "https://developer.microsoft.com/en-us/json-schemas/teams/v1.5/MicrosoftTeams.schema.json",
     "manifestVersion": "1.5",
     "version": "1.0.0",
-    "id": "<<YOUR-MICROSOFT-BOT-ID>>",
+    "id": "0f405b83-8b6b-4f97-86e5-2a7753c73bb2",
     "developer": {
       "name": "teamsQABot"
     },
@@ -21,7 +21,7 @@
     "accentColor": "#FFFFFF",
     "bots": [
       {
-        "botId": "<<YOUR-MICROSOFT-BOT-ID>>",
+        "botId": "0f405b83-8b6b-4f97-86e5-2a7753c73bb2",
         "scopes": [
           "personal",
           "groupchat",
