@@ -1,0 +1,62 @@
+{
+    "$schema": "https://developer.microsoft.com/en-us/json-schemas/teams/v1.5/MicrosoftTeams.schema.json",
+    "manifestVersion": "1.5",
+    "version": "1.0.0",
+    "id": "<<YOUR-MICROSOFT-BOT-ID>>",
+    "developer": {
+      "name": "teamsQABot"
+    },
+    "icons": {
+      "outline": "icon-outline.png",
+      "color": "icon-color.png"
+    },
+    "name": {
+      "short": "TeamsQABot",
+      "full": "TeamsQABot"
+    },
+    "description": {
+      "short": "TeamsQABot",
+      "full": "TeamsQABot"
+    },
+    "accentColor": "#FFFFFF",
+    "bots": [
+      {
+        "botId": "<<YOUR-MICROSOFT-BOT-ID>>",
+        "scopes": [
+          "personal",
+          "groupchat",
+          "team"
+        ],
+        "supportsFiles": false,
+        "isNotificationOnly": false,
+        "commandLists": [
+          {
+            "scopes": [
+              "personal",
+              "groupchat",
+              "team"
+            ],
+            "commands": [
+              {
+                "title": "MentionMe",
+                "description": "Sends message with @mention of the sender"
+              },
+              {
+                "title": "Show Welcome",
+                "description": "Shows the welcome card"
+              },
+              {
+                "title": "MessageAllMembers",
+                "description": "Send 1 to 1 message to all members of the current conversation"
+              }
+            ]
+          }
+        ]
+      }
+    ],
+    "permissions": [
+      "identity",
+      "messageTeamMembers"
+    ],
+    "validDomains": []
+  }

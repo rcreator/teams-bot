@@ -1,39 +1,74 @@
-from flask import Flask,request,Response
-from botbuilder.core import BotFrameworkAdapter,BotFrameworkAdapterSettings,TurnContext,ConversationState,MemoryStorage
-from botbuilder.schema import Activity
-import asyncio
-from herocard import SampleAnimationCard
+from flask import Flask, request, Response
+from http import HTTPstatus
 
+from botbuilder.core import (
+    TurnContext,
+    BotFrameworkAdapterSettings,
+    BotFrameworkAdapter
+)
+from botbuilder.schema import Activity, ActivityTypes
 
+from bots import TeamsQABot
+
+LOOP = asyncio.get_event_loop()
 app = Flask(__name__)
-loop = asyncio.get_event_loop()
 
-botsettings = BotFrameworkAdapterSettings("ad32dca8-baa9-4b65-89c7-dbd4e182e2a7","1-zxqPrqgw2_2djH5-J8kv.qVL70yA~srf")
-botadapter = BotFrameworkAdapter(botsettings)
+from config import AppConfig
+CONFIG = AppConfig()
 
-CONMEMORY = ConversationState(MemoryStorage())
-botdialog = SampleAnimationCard()
+SETTINGS = BotFrameworkAdapterSettings(CONFIG.APP_ID, CONFIG.APP_PASSWORD)
+ADAPTER = BotFrameworkAdapter(SETTINGS)
 
+# Catch-all for errors.
+async def on_error(context: TurnContext, error: Exception):
+    # This check writes out errors to console log .vs. app insights.
+    # NOTE: In production environment, you should consider logging this to Azure
+    #       application insights.
+    print(f"\n [on_turn_error] unhandled error: {error}", file=sys.stderr)
 
-@app.route("/api/messages",methods=["POST"])
-def messages():
-    if "application/json" in request.headers["content-type"]:
-        body = request.json
-    else:
-        return Response(status = 415)
-
-    activity = Activity().deserialize(body)
-
-    auth_header = (request.headers["Authorization"] if "Authorization" in request.headers else "")
-
-    async def call_fun(turncontext):
-        await botdialog.on_turn(turncontext)
-
-    task = loop.create_task(
-        botadapter.process_activity(activity,auth_header,call_fun)
+    # Send a message to the user
+    await context.send_activity("The bot encountered an error or bug.")
+    await context.send_activity("To continue to run this bot, please fix the bot source code.")
+    # Send a trace activity if we're talking to the Bot Framework Emulator
+    if context.activity.channel_id == 'emulator':
+        # Create a trace activity that contains the error object
+        trace_activity = Activity(
+            label="TurnError",
+            name="on_turn_error Trace",
+            timestamp=datetime.utcnow(),
+            type=ActivityTypes.trace,
+            value=f"{error}",
+            value_type="https://www.botframework.com/schemas/error"
         )
-    loop.run_until_complete(task)
+        # Send a trace activity, which will be displayed in Bot Framework Emulator
+        await context.send_activity(trace_activity)
 
+ADAPTER.on_turn_error = on_error
+
+BOT = TeamsQABot(CONFIG.APP_ID, CONFIG.APP_PASSWORD)
+
+@app.route("/api/messages", methods=["POST"])
+def messages():
+    if "application/json" in request.headers["Content-Type"]:
+        message_body = request.json
+    else:
+        return Response(status=HTTPstatus.UNSUPPORTED_MEDIA_TYPE)
+
+    activity = Activity().deserialize(message_body)
+    if "Authorization" in request.headers:
+        auth_header = request.headers["Authorization"]
+    else:
+        auth_header = ""
+
+    try:
+        task = LOOP.create_task(ADAPTER.process_activity(activity, auth_header, BOT.on_turn))
+        LOOP.run_until_complete(task)
+        return Response(status=HTTPstatus.OK)
+    except Exception as exception:
+        raise exception
 
 if __name__ == '__main__':
-    app.run('localhost',3978)
+    try:
+        app.run('localhost', CONFIG.PORT)
+    except Exception as error:
+        raise error
