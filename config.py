@@ -3,5 +3,5 @@ import os
 class AppConfig:
 
     PORT = 3978
-    APP_ID = os.environ.get("MicrosoftAppId", "0f405b83-8b6b-4f97-86e5-2a7753c73bb2")
-    APP_PASSWORD = os.environ.get("MicrosoftAppPassword", "520x1oVD1Wo7R_MFH.V6U8j-_u85H~Hge2")
+    APP_ID = "6e3fddd5-547e-4a26-baa4-ad08d6729cbc"
+    APP_PASSWORD = "-1Y68V2T.I2C1WCDZ4x4XC3UN.8_z1A~rA"

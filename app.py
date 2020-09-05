@@ -1,3 +1,7 @@
+import sys
+from datetime import datetime
+import traceback
+
 from flask import Flask, request, Response
 from http import HTTPStatus
 import asyncio
@@ -53,7 +57,7 @@ def messages():
     if "application/json" in request.headers["Content-Type"]:
         message_body = request.json
     else:
-        return Response(status=HTTPstatus.UNSUPPORTED_MEDIA_TYPE)
+        return Response(status=HTTPStatus.UNSUPPORTED_MEDIA_TYPE)
 
     activity = Activity().deserialize(message_body)
     if "Authorization" in request.headers:
@@ -64,12 +68,13 @@ def messages():
     try:
         task = LOOP.create_task(ADAPTER.process_activity(activity, auth_header, BOT.on_turn))
         LOOP.run_until_complete(task)
-        return Response(status=HTTPstatus.OK)
+        return Response(status=HTTPStatus.OK)
     except Exception as exception:
+        print(CONFIG.APP_ID, CONFIG.APP_PASSWORD)
         raise exception
 
 if __name__ == '__main__':
     try:
-        app.run('localhost', CONFIG.PORT)
+        app.run(debug=False, host="localhost", port=CONFIG.PORT)
     except Exception as error:
         raise error

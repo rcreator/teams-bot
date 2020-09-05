@@ -2,9 +2,9 @@
     "$schema": "https://developer.microsoft.com/en-us/json-schemas/teams/v1.5/MicrosoftTeams.schema.json",
     "manifestVersion": "1.5",
     "version": "1.0.0",
-    "id": "0f405b83-8b6b-4f97-86e5-2a7753c73bb2",
+    "id": "6e3fddd5-547e-4a26-baa4-ad08d6729cbc",
     "developer": {
-      "name": "teamsQABot"
+      "name": "Mikhail"
     },
     "icons": {
       "outline": "icon-outline.png",
@@ -21,7 +21,7 @@
     "accentColor": "#FFFFFF",
     "bots": [
       {
-        "botId": "0f405b83-8b6b-4f97-86e5-2a7753c73bb2",
+        "botId": "6e3fddd5-547e-4a26-baa4-ad08d6729cbc",
         "scopes": [
           "personal",
           "groupchat",
