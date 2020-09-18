@@ -1,3 +1,3 @@
 from .bot import TeamsQABot
 
-__all__ = ["TeamsQABot"]
+__all__ = [ "TeamsQABot" ]

@@ -3,20 +3,24 @@
     "manifestVersion": "1.5",
     "version": "1.0.0",
     "id": "6e3fddd5-547e-4a26-baa4-ad08d6729cbc",
+    "packageName": "com.teams.sample.teamsconversationbot",
     "developer": {
-      "name": "Mikhail"
+      "name": "teamsConversationBot",
+      "websiteUrl": "https://www.microsoft.com",
+      "privacyUrl": "https://www.teams.com/privacy",
+      "termsOfUseUrl": "https://www.teams.com/termsofuser"
     },
     "icons": {
       "outline": "icon-outline.png",
       "color": "icon-color.png"
     },
     "name": {
-      "short": "TeamsQABot",
-      "full": "TeamsQABot"
+      "short": "TeamsConversationBot",
+      "full": "TeamsConversationBot"
     },
     "description": {
-      "short": "TeamsQABot",
-      "full": "TeamsQABot"
+      "short": "TeamsConversationBot",
+      "full": "TeamsConversationBot"
     },
     "accentColor": "#FFFFFF",
     "bots": [
