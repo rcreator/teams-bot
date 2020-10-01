@@ -11,7 +11,8 @@ from botbuilder.core import (
     BotFrameworkAdapterSettings,
     BotFrameworkAdapter,
     MemoryStorage,
-    UserState
+    UserState,
+    ConversationState
 )
 from botbuilder.schema import Activity, ActivityTypes
 
@@ -52,6 +53,7 @@ ADAPTER.on_turn_error = on_error
 
 MEMORY_STORAGE = MemoryStorage()
 USER_STATE = UserState(MEMORY_STORAGE)
+CONVERSATION_STATE = ConversationState(MEMORY_STORAGE)
 
 from translation import TranslatorMiddleware, TranslatorM
 
@@ -61,7 +63,7 @@ ADAPTER.use(TRANSLATOR_MIDDLEWARE)
 
 from bots import TeamsQABot
 
-BOT = TeamsQABot(CONFIG, USER_STATE)
+BOT = TeamsQABot(CONFIG, USER_STATE, CONVERSATION_STATE)
 
 @app.route("/api/messages", methods=["POST"])
 def messages():

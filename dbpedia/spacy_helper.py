@@ -1,12 +1,27 @@
 import re
 import spacy
-from spacy.tokens import Token
+from spacy.tokens import Token, Span
 from spacy.tokenizer import Tokenizer
-from spacy.lang.char_classes import ALPHA, ALPHA_LOWER, ALPHA_UPPER, CONCAT_QUOTES, LIST_ELLIPSES, LIST_ICONS
-from spacy.util import compile_prefix_regex, compile_infix_regex, compile_suffix_regex
+from spacy.matcher import Matcher
 
-PROPERTY_POS = [ "PROPN", "NOUN" ]
-PROPERTY_TAGS = [ "NN", "NNP", "NNPS", "NNS" ]
+from spacy.lang.char_classes import (
+    ALPHA, ALPHA_LOWER, ALPHA_UPPER,
+    CONCAT_QUOTES, LIST_ELLIPSES, LIST_ICONS
+)
+
+from spacy.util import (
+    compile_prefix_regex, compile_infix_regex, compile_suffix_regex
+)
+
+QUESTION_KEYS = [
+    "what",
+    "which",
+    "how",
+    "why",
+    "when",
+    "where",
+    "who",
+]
 
 def custom_tokenizer(nlp):
     infixes = (
@@ -33,49 +48,111 @@ def custom_tokenizer(nlp):
 nlp = spacy.load("en_core_web_sm")
 nlp.tokenizer = custom_tokenizer(nlp)
 
-def extract_subjects(doc):
-    subjects = {}
+MATCHER = Matcher(nlp.vocab)
+RELATION_PATTERN = [ {'DEP':'ROOT'},
+                     {'DEP':'prep' , 'OP':"?"},
+                     {'DEP':'agent', 'OP':"?"},
+                     {'POS':'ADJ'  , 'OP':"?"} ]
+
+def extract_noun_chunks(doc, dep_tag):
+    chunks = {}
+
+    for chunk in doc.noun_chunks:
+        if chunk.root.dep_.find(dep_tag) == True and chunk.root.text not in QUESTION_KEYS:
+            start = (chunk[0].dep_ == "det")
+            chunks[chunk.root.dep_] = (chunk[start:].text)
+
+    return chunks
+
+def extract_entities(doc, dep_tag):
+    entities = {}
 
     for token in doc:
         if token.dep_ != "punct":
-            if token.dep_.find("subj") == True:
-                subjects[token.dep_] = token.text
+            if token.dep_.find(dep_tag) == True and token.text not in QUESTION_KEYS:
+                print(token.text)
+                entities[token.dep_] = token.text
                 for child in token.children:
-                    if (child.dep_ == "compound" or
+                    print(child.text)
+                    if (child.dep_.find("compound") == True or
                         child.dep_.endswith("mod") or
-                        child.dep_ == "poss"):
-                        subjects[token.dep_] = child.text + " " + subjects[token.dep_]
+                        child.dep_.find("poss") == True or
+                        child.dep_.find("attr") == True):
+                        entities[token.dep_] = child.text + " " + entities[token.dep_]
 
-    return subjects
+    return entities
 
-def extract_objects(doc):
-    objects = {}
+def extract_nouns(doc):
+    subject = ""
+
+    prev_token_dep = ""
+    prev_token_text = ""
+
+    prefix = ""
+    modifier = ""
 
     for token in doc:
         if token.dep_ != "punct":
-            if token.dep_.find("obj") == True:
-                objects[token.dep_] = token.text
-                for child in token.children:
-                    if (child.dep_ == "compound" or
-                        child.dep_.endswith("mod") or
-                        child.dep_ == "poss"):
-                        objects[token.dep_] = child.text + " " + objects[token.dep_]
+            if token.dep_.find("compound") == True:
+                prefix = token.text
+                if prev_token_dep.find("compound") == True:
+                    prefix = prev_token_text + " " + token.text
 
-    return objects
+            if token.dep_.endswith("mod") == True:
+                modifier = token.text
+                if prev_token_dep.find("compound") == True:
+                    modifier = prev_token_text + " " + token.text
+
+            if token.pos_ == "NOUN":
+                if modifier and prefix:
+                    subjects = modifier + " " + prefix + " " + token.text
+                elif modifier:
+                    subject = modifier + " " + token.text
+                elif prefix:
+                    subject = prefix + " " + token.text
+                else:
+                    subject = token.text
+
+                prefix = ""
+                modifier = ""
+                prev_token_dep = ""
+                prev_token_text = ""
+
+            prev_token_dep = token.dep_
+            prev_token_text = token.text
+
+    return { "subj": subject.strip() }
 
 def extract_relations(doc):
-    root = [token for token in doc if token.head == token][0]
-    return { root.dep_: root.text }
+    MATCHER.add("RelationMatching", None, RELATION_PATTERN)
 
-def get_entities(user_query):
+    matches = MATCHER(doc)
+    span = doc[matches[-1][1]:matches[-1][2]]
+
+    return { 'ROOT' : span.text }
+
+def parse_query(user_query):
     doc = nlp(user_query)
-    return [(token.text, token.label_) for token in doc.ents]
 
-def get_triples(user_query):
-    doc = nlp(user_query)
+    for chunk in doc:
+        print(chunk.text, chunk.dep_, chunk.pos_)
 
-    subjects = extract_subjects(doc)
-    objects = extract_objects(doc)
+    subjects = extract_noun_chunks(doc, "subj")
+    objects = extract_noun_chunks(doc, "obj")
+
+    print(subjects)
+    print(objects)
+
+    if not (bool(subjects) or bool(objects)):
+        subjects.update(extract_entities(doc, "subj"))
+        objects.update(extract_entities(doc, "obj"))
+
+    print(subjects)
+    print(objects)
+
+    if not (bool(subjects) or bool(objects)):
+        subjects = extract_nouns(doc)
+
     relations = extract_relations(doc)
 
     return subjects, objects, relations
