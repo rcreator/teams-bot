@@ -1,0 +1,18 @@
+{
+    "name": "TeamsQASystem",
+    "description": "",
+    "services": [
+        {
+            "type": "endpoint",
+            "appId": "dd61a42e-3a25-449b-94c4-b6b0210f0106",
+            "appPassword": ":[)(G0>4BzxlO*vF&4G7ZHAG(",
+            "endpoint": "http://localhost:3978/api/messages",
+            "id": "7acbc4c0-07bd-11eb-823b-2df52a4ec750",
+            "name": "http://localhost:3978/api/messages"
+        }
+    ],
+    "padlock": "",
+    "version": "2.0",
+    "path": "/Users/mikhbych/Projects/teams-bot/TeamsQASystem.bot",
+    "overrides": null
+}

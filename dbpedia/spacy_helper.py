@@ -70,14 +70,12 @@ def extract_entities(doc, dep_tag):
     for token in doc:
         if token.dep_ != "punct":
             if token.dep_.find(dep_tag) == True and token.text not in QUESTION_KEYS:
-                print(token.text)
                 entities[token.dep_] = token.text
                 for child in token.children:
-                    print(child.text)
-                    if (child.dep_.find("compound") == True or
-                        child.dep_.endswith("mod") or
-                        child.dep_.find("poss") == True or
-                        child.dep_.find("attr") == True):
+                    if (child.dep_.endswith("compound") == True or
+                        child.dep_.endswith("mod") == True or
+                        child.dep_.endswith("poss") == True or
+                        child.dep_.endswith("attr") == True):
                         entities[token.dep_] = child.text + " " + entities[token.dep_]
 
     return entities
@@ -123,7 +121,7 @@ def extract_nouns(doc):
 
     return { "subj": subject.strip() }
 
-def extract_relations(doc):
+def extract_relation(doc):
     MATCHER.add("RelationMatching", None, RELATION_PATTERN)
 
     matches = MATCHER(doc)
@@ -134,25 +132,18 @@ def extract_relations(doc):
 def parse_query(user_query):
     doc = nlp(user_query)
 
-    for chunk in doc:
-        print(chunk.text, chunk.dep_, chunk.pos_)
-
     subjects = extract_noun_chunks(doc, "subj")
     objects = extract_noun_chunks(doc, "obj")
-
-    print(subjects)
-    print(objects)
+    relations = extract_relation(doc)
 
     if not (bool(subjects) or bool(objects)):
         subjects.update(extract_entities(doc, "subj"))
         objects.update(extract_entities(doc, "obj"))
 
-    print(subjects)
-    print(objects)
-
     if not (bool(subjects) or bool(objects)):
         subjects = extract_nouns(doc)
 
-    relations = extract_relations(doc)
+        if subjects["subj"] == "":
+            subjects = relations
 
     return subjects, objects, relations

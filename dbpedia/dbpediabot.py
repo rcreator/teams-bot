@@ -1,12 +1,11 @@
 from .spacy_helper import parse_query
-from deeppavlov_models import BertModel
 
 from SPARQLWrapper import SPARQLWrapper, JSON
 import json
 import requests
 import pandas as pd
 
-MAX_ATTEMPT = 3
+MAX_ATTEMPT = 4
 
 dbpedia_sparql_endpoint = SPARQLWrapper(
     "https://dbpedia.org/sparql", agent="TeamsBot"
@@ -15,23 +14,14 @@ wikidata_sparql_endpoint = SPARQLWrapper(
     "https://query.wikidata.org/sparql", agent="TeamsBot"
 )
 
-class DbpediaBot:
+class DBpediaBot:
     def get_answer(self, query):
         answer = dict()
-
         properties_found, properties = self.find_wikidata_properties(query)
         entities_found, entities_data = self.get_entities_data(query)
 
         if entities_found:
-            answer.update({ "entities": entities_data })
-
-            context = [ data["abstract"] for entity, data in entities_data.items() ]
-            question = [ query ] * len(context)
-            model = BertModel(context, question)
-            prediction = model.make_prediction()
-
-            answer.update({ "bert": prediction })
-
+            answer.update({ "dbpedia": entities_data })
             if properties_found:
                 properties_linked, properties_data = self.get_properties_data(
                     query, properties, entities_data
@@ -45,11 +35,7 @@ class DbpediaBot:
         properties = list()
         subjects, objects, relations = parse_query(query)
         triple = { **subjects, **objects, **relations }
-
-        print("Query properties:", triple)
-        data = pd.read_json(
-            r'/Users/mikhbych/Projects/teams-bot/dbpedia/properties.json'
-        )
+        data = pd.read_json(r'dbpedia/properties.json')
 
         for _, text in triple.items():
             properties.extend(data.loc[(data["text"] == text)]["code"].values)
@@ -82,41 +68,20 @@ class DbpediaBot:
     def dbpedia_abstract_query(self, sparql_endpoint, entity, attempt):
         if attempt == 0:
             query = self.form_sparql_request_abstract_v1(entity)
-            response = self.send_sparql_request(query, sparql_endpoint)
-            print("-----------------\n")
-
-            print("dbpedia_abstract_query v1")
-
-            print(entity)
-            print(response)
-            print("-----------------\n")
-            response_status = len(response["results"]["bindings"]) > 0
 
         if attempt == 1:
             query = self.form_sparql_request_abstract_v2(entity)
-            response = self.send_sparql_request(query, sparql_endpoint)
-            print("-----------------\n")
-
-            print("dbpedia_abstract_query v2")
-
-            print(entity)
-            print(response)
-            print("-----------------\n")
-            response_status = len(response["results"]["bindings"]) > 0
 
         if attempt == 2:
             query = self.form_sparql_request_abstract_v3(entity)
-            response = self.send_sparql_request(query, sparql_endpoint)
-            print("-----------------\n")
 
-            print("dbpedia_abstract_query v3")
+        if attempt == 3:
+            query = self.form_sparql_request_abstract_v4(entity)
 
-            print(entity)
-            print(response)
-            print("-----------------\n")
-            response_status = len(response["results"]["bindings"]) > 0
-
+        response = self.send_sparql_request(query, sparql_endpoint)
+        response_status = len(response["results"]["bindings"]) > 0
         result = self.convert_sparql_response(response, entity)
+
         return response_status, result
 
     def send_sparql_request(self, query, sparql_endpoint):
@@ -137,7 +102,42 @@ class DbpediaBot:
     def form_sparql_request_abstract_v1(self, entity):
         entity_label = entity.capitalize()
 
-        print(entity_label)
+        query = (
+            """
+                SELECT DISTINCT ?type ?entity ?abstract ?thumbnail
+                WHERE
+                {
+                    {
+                        ?entity rdfs:label            ?label;
+                                dbo:abstract          ?abstract.
+                        ?alias  dbo:wikiPageRedirects ?entity;
+                                rdfs:label            \"""" + entity_label + """\"@en.
+                        FILTER(LANG(?label) = "en")
+                    }
+                    UNION
+                    {
+                        ?entity rdfs:label   ?label;
+                                dbo:abstract ?abstract;
+                                dct:subject  dbc:Machine_learning.
+                        FILTER(LANG(?label) = "en")
+                        FILTER(STRSTARTS(?label, \"""" + entity_label + """\"))
+                    }
+                    OPTIONAL
+                    {
+                        ?entity dbo:thumbnail         ?thumbnail.
+
+                    }
+                    FILTER(LANG(?abstract) = "en")
+                }
+                LIMIT 1
+            """
+        )
+
+        return query
+
+
+    def form_sparql_request_abstract_v2(self, entity):
+        entity_label = entity.capitalize()
 
         query = (
             """
@@ -159,6 +159,14 @@ class DbpediaBot:
                         FILTER(LANG(?label) = "en")
                         FILTER(STRSTARTS(?label, \"""" + entity_label + """\"))
 
+                    }
+                    UNION
+                    {
+                        ?entity rdfs:label   ?label;
+                                dbo:abstract ?abstract;
+                                dct:subject  dbc:Machine_learning.
+                        FILTER(LANG(?label) = "en")
+                        FILTER(STRSTARTS(?label, \"""" + entity_label + """\"))
                     }
                     UNION
                     {
@@ -220,13 +228,13 @@ class DbpediaBot:
                     }
                     FILTER(LANG(?abstract) = "en")
                 }
-                LIMIT 10
+                LIMIT 1
             """
         )
 
         return query
 
-    def form_sparql_request_abstract_v2(self, entity):
+    def form_sparql_request_abstract_v3(self, entity):
         entity_label = entity.capitalize() + " "
 
         query = (
@@ -274,13 +282,13 @@ class DbpediaBot:
                     FILTER(LANG(?abstract) = "en")
                 }
 
-                LIMIT 10
+                LIMIT 1
             """
         )
 
         return query
 
-    def form_sparql_request_abstract_v3(self, entity):
+    def form_sparql_request_abstract_v4(self, entity):
         entity_label = entity.capitalize()
 
         query = (
@@ -308,7 +316,7 @@ class DbpediaBot:
                     }
                     FILTER(LANG(?abstract) = "en")
                 }
-                LIMIT 10
+                LIMIT 1
             """
         )
 
@@ -340,7 +348,7 @@ class DbpediaBot:
                     ?entity rdfs:label               \"""" + entity_label + """\"@en;
                             wdt:""" + property + """ ?property_id.
                 }
-                LIMIT 10
+                LIMIT 1
             """
         )
 

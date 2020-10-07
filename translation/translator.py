@@ -1,8 +1,6 @@
 import requests
 import uuid
-
 from config import AppConfig
-
 from googletrans import Translator
 
 class TranslatorM:
@@ -12,11 +10,11 @@ class TranslatorM:
 
     async def translate(self, input_question, output_lang):
         translator = Translator()
-        result = translator.translate(input_question, dest=output_lang)
 
-        if result:
+        try:
+            result = translator.translate(input_question, dest=output_lang)
             return result.text
-        else:
+        except Exception as exception:
             base_url = "https://api.cognitive.microsofttranslator.com"
             path = "/translate?api-version=3.0"
             params = "&to=" + output_lang
@@ -32,6 +30,6 @@ class TranslatorM:
 
             response = requests.post(url, headers=headers, json=body)
             if response.status_code / 100 != 2:
-                return "Unable to translate text.  Check your subscription key and region."
+                return "Unable to translate text. Check your subscription key and region."
 
             return json_response[0]["translations"][0]["text"]

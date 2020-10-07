@@ -16,12 +16,11 @@ from botbuilder.core import (
 )
 from botbuilder.schema import Activity, ActivityTypes
 
-LOOP = asyncio.get_event_loop()
-app = Flask(__name__)
-
 from config import AppConfig
-CONFIG = AppConfig()
+from translation import TranslatorMiddleware, TranslatorM
+from bots import TeamsQABot
 
+CONFIG = AppConfig()
 SETTINGS = BotFrameworkAdapterSettings(CONFIG.APP_ID, CONFIG.APP_PASSWORD)
 ADAPTER = BotFrameworkAdapter(SETTINGS)
 
@@ -55,15 +54,14 @@ MEMORY_STORAGE = MemoryStorage()
 USER_STATE = UserState(MEMORY_STORAGE)
 CONVERSATION_STATE = ConversationState(MEMORY_STORAGE)
 
-from translation import TranslatorMiddleware, TranslatorM
-
 TRANSLATOR = TranslatorM(CONFIG)
 TRANSLATOR_MIDDLEWARE = TranslatorMiddleware(TRANSLATOR, USER_STATE)
 ADAPTER.use(TRANSLATOR_MIDDLEWARE)
 
-from bots import TeamsQABot
-
 BOT = TeamsQABot(CONFIG, USER_STATE, CONVERSATION_STATE)
+
+LOOP = asyncio.get_event_loop()
+app = Flask(__name__)
 
 @app.route("/api/messages", methods=["POST"])
 def messages():
@@ -85,7 +83,7 @@ def messages():
     except Exception as exception:
         raise exception
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     try:
         app.run(debug=False, host="localhost", port=CONFIG.PORT)
     except Exception as error:

@@ -1,3 +1,3 @@
-from .dbpediabot import DbpediaBot
+from .dbpediabot import DBpediaBot
 
-__all__ = [ "DbpediaBot" ]
+__all__ = [ "DBpediaBot" ]
