@@ -1,2 +1,10 @@
 botbuilder-core>=4.7.0
+botbuilder-ai>=4.10.1
+botbuilder-schema>=4.10.1
+botbuilder-azure>=4.10.1
+botbuilder-integration-aiohttp>=4.10.1
 aiohttp
+SPARQLWrapper==1.8.5
+googletrans==3.0.0
+spacy==2.3.2
+Flask==1.1.2
